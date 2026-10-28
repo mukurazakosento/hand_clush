@@ -112,7 +112,6 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* 共通カード */
         .card {
             background: var(--panel-bg);
             border: 1px solid var(--border);
@@ -122,7 +121,6 @@
             box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
-        /* リーグ戦・トーナメント画面 */
         .dashboard-grid {
             display: grid;
             grid-template-columns: 1fr 380px;
@@ -201,7 +199,6 @@
             box-shadow: 0 4px 12px var(--accent-glow);
         }
 
-        /* 順位表 */
         table {
             width: 100%;
             border-collapse: collapse;
@@ -224,7 +221,6 @@
             background: rgba(30, 41, 59, 0.3);
         }
 
-        /* バトル画面 (5v5 レーン対抗) */
         .battle-header {
             display: flex;
             justify-content: space-between;
@@ -349,7 +345,6 @@
             margin-top: 10px;
         }
 
-        /* モーダル */
         .modal-overlay {
             position: fixed;
             top: 0;
@@ -420,7 +415,6 @@
     </header>
 
     <main>
-        <!-- 1. リーグ戦タブ -->
         <section id="tab-league" class="view-section active">
             <div class="dashboard-grid">
                 <div class="card">
@@ -428,9 +422,7 @@
                         <h2>🔄 1次ラウンド：総当たりリーグ戦 (3巡制 / 全27試合)</h2>
                         <button class="btn btn-secondary" onclick="simAllLeague()">残り一括シミュレート</button>
                     </div>
-                    <div class="match-list" id="league-match-list">
-                        <!-- 動的生成 -->
-                    </div>
+                    <div class="match-list" id="league-match-list"></div>
                 </div>
                 <div class="card">
                     <h2 style="margin-bottom: 15px;">🏆 現在の順位表</h2>
@@ -443,25 +435,19 @@
                                 <th>残りHP</th>
                             </tr>
                         </thead>
-                        <tbody id="league-standings-body">
-                            <!-- 動的生成 -->
-                        </tbody>
+                        <tbody id="league-standings-body"></tbody>
                     </table>
                 </div>
             </div>
         </section>
 
-        <!-- 2. 決勝トーナメントタブ -->
         <section id="tab-playoff" class="view-section">
             <div class="card">
                 <h2 style="margin-bottom: 20px;">🥇 最終ラウンド：上位4チームによる決勝トーナメント (BO5)</h2>
-                <div id="playoff-container" style="display: flex; flex-direction: column; gap: 20px;">
-                    <!-- 動的生成 -->
-                </div>
+                <div id="playoff-container" style="display: flex; flex-direction: column; gap: 20px;"></div>
             </div>
         </section>
 
-        <!-- 3. バトル画面タブ -->
         <section id="tab-battle" class="view-section">
             <div class="battle-header">
                 <div>
@@ -474,18 +460,15 @@
                 </div>
             </div>
 
-            <div class="lanes-container" id="lanes-container">
-                <!-- 5レーン動的生成 -->
-            </div>
+            <div class="lanes-container" id="lanes-container"></div>
 
             <div class="battle-controls" id="battle-controls-area">
-                <button class="btn" id="btn-reroll" onclick="playerReroll()" style="display:none;">選択ダイスを振り直し (REROLL)</button>
+                <button class="btn" id="btn-reroll" onclick="playerReroll()">選択ダイスを振り直し (REROLL)</button>
                 <button class="btn" id="btn-next-turn" onclick="nextBattleTurn()" style="display:none;">次のターンへ</button>
             </div>
         </section>
     </main>
 
-    <!-- ルールモーダル -->
     <div class="modal-overlay" id="rules-modal">
         <div class="modal-box">
             <h2 class="modal-title">📖 ゲームルール仕様</h2>
@@ -512,7 +495,6 @@
         </div>
     </div>
 
-    <!-- 試合結果モーダル -->
     <div class="modal-overlay" id="result-modal">
         <div class="modal-box">
             <h2 class="modal-title" id="result-modal-title">試合終了！</h2>
@@ -522,7 +504,6 @@
     </div>
 
     <script>
-        // --- サウンド効果 (Web Audio API) ---
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playSound(type) {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -560,14 +541,13 @@
             }
         }
 
-        // --- データ定義 ---
         const TEAMS = [
             "CAバクラー", "鳳凰", "月見", "花見", "雨四光", 
             "盃", "ぶっく", "あかよろし", "猪鹿蝶", "みなしの"
         ];
 
-        let leagueMatches = []; // 3巡制リーグ全27試合
-        let teamStats = {};     // チームごとの勝数, 獲得HP累計
+        let leagueMatches = [];
+        let teamStats = {};
         let playoffData = {
             semi1: { teamA: null, teamB: null, winsA: 0, winsB: 0, finished: false },
             semi2: { teamA: null, teamB: null, winsA: 0, winsB: 0, finished: false },
@@ -575,27 +555,25 @@
         };
 
         let currentBattle = {
-            type: 'league', // 'league' or 'playoff_semi1' etc.
+            type: 'league',
             matchIdx: null,
             teamAName: '',
             teamBName: '',
             lanes: [],
             turn: 1,
-            phase: 'roll', // 'roll', 'reroll', 'resolve', 'ended'
+            phase: 'roll', 
             isAuto: false
         };
 
-        // 初期化
         function initGame() {
             TEAMS.forEach(t => {
                 teamStats[t] = { wins: 0, totalHpScore: 0 };
             });
 
-            // 総当たり3巡リーグスケジュール作成
             leagueMatches = [];
             let n = TEAMS.length;
             let list = [...TEAMS];
-            let roundsPerCycle = n - 1; // 9巡
+            let roundsPerCycle = n - 1;
             let half = n / 2;
 
             for (let cycle = 0; cycle < 3; cycle++) {
@@ -611,7 +589,6 @@
                             matchPair.push({ t1: t1, t2: t2 });
                         }
                     }
-                    // このラウンドの対戦を登録
                     matchPair.forEach(p => {
                         leagueMatches.push({
                             teamA: p.t1,
@@ -622,7 +599,6 @@
                             finished: false
                         });
                     });
-                    // ローテーション (固定1つ、他を回転)
                     let fixed = rotList[0];
                     let popped = rotList.pop();
                     rotList.splice(1, 0, popped);
@@ -632,7 +608,6 @@
             renderLeagueUI();
         }
 
-        // --- 画面切り替え ---
         function switchTab(tabName) {
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
             document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
@@ -649,7 +624,6 @@
             }
         }
 
-        // --- リーグ戦 UI 描画 ---
         function renderLeagueUI() {
             const listEl = document.getElementById('league-match-list');
             listEl.innerHTML = '';
@@ -658,9 +632,16 @@
                 let div = document.createElement('div');
                 div.className = `match-item ${m.finished ? 'finished' : ''}`;
                 
-                let statusText = m.finished ? `勝利: ${m.winner} (残HP:${m.winner === m.teamA ? m.hpScoreA : m.hpScoreB})` : 
-                                 (m.teamA === 'CAバクラー' || m.teamB === 'CAバクラー') ? '<button class="btn" style="padding:6px 12px; font-size:0.8rem;" onclick="startLeagueMatch(' + idx + ')">バトル開始</button>' : 
-                                 '<button class="btn btn-secondary" style="padding:6px 12px; font-size:0.8rem;" onclick="simLeagueMatch(' + idx + ')">シミュレート</button>';
+                let isMyMatch = (m.teamA === 'CAバクラー' || m.teamB === 'CAバクラー');
+                let statusText = '';
+
+                if (m.finished) {
+                    statusText = `勝利: ${m.winner} (残HP:${m.winner === m.teamA ? m.hpScoreA : m.hpScoreB})`;
+                } else if (isMyMatch) {
+                    statusText = `<button class="btn" style="padding:6px 12px; font-size:0.8rem;" onclick="startLeagueMatch(${idx})">バトル開始</button>`;
+                } else {
+                    statusText = `<span style="color:var(--text-sub); font-size:0.85rem;">未消化</span>`;
+                }
 
                 div.innerHTML = `
                     <div><strong>第${idx+1}戦</strong>: ${m.teamA} vs ${m.teamB}</div>
@@ -669,7 +650,6 @@
                 listEl.appendChild(div);
             });
 
-            // 順位表更新
             let sortedTeams = [...TEAMS].sort((a, b) => {
                 if (teamStats[b].wins !== teamStats[a].wins) {
                     return teamStats[b].wins - teamStats[a].wins;
@@ -691,14 +671,11 @@
             });
         }
 
-        // --- リーグ戦 1試合シミュレート (NPC同士など) ---
         function simLeagueMatch(idx) {
             let m = leagueMatches[idx];
             if (m.finished) return;
 
-            // ランダム勝敗決定
             let winner = Math.random() < 0.5 ? m.teamA : m.teamB;
-            let loser = winner === m.teamA ? m.teamB : m.teamA;
             let winHp = Math.floor(Math.random() * 200) + 100;
 
             m.finished = true;
@@ -727,7 +704,18 @@
             });
         }
 
-        // --- 決勝トーナメント進出判定 ---
+        // 💡 自分の試合終了時に「未消化のCPU試合を1つだけ消化する」機能
+        function processNextPendingCpuMatch() {
+            let nextPendingIdx = leagueMatches.findIndex(m => !m.finished);
+            if (nextPendingIdx !== -1) {
+                let m = leagueMatches[nextPendingIdx];
+                // もし次の未消化試合に自分が含まれていない(=CPU同士の試合)なら1つだけ自動消化
+                if (m.teamA !== 'CAバクラー' && m.teamB !== 'CAバクラー') {
+                    simLeagueMatch(nextPendingIdx);
+                }
+            }
+        }
+
         function checkPlayoffUnlock() {
             let allFinished = leagueMatches.every(m => m.finished);
             if (allFinished && playoffData.semi1.teamA === null) {
@@ -783,7 +771,6 @@
             }
         }
 
-        // --- バトルシステム (5v5 レーン対抗) ---
         function startLeagueMatch(idx) {
             let m = leagueMatches[idx];
             currentBattle.type = 'league';
@@ -827,7 +814,6 @@
                 });
             }
 
-            // 初回ダイスロール
             rollAllDice();
             renderBattleUI();
         }
@@ -850,30 +836,20 @@
             });
         }
 
-        // 役判定ロジック
         function evaluateHand(dice) {
             let counts = {};
             dice.forEach(d => counts[d] = (counts[d] || 0) + 1);
             let vals = Object.values(counts).sort((a,b) => b - a);
             let uniqueSorted = [...new Set(dice)].sort((a,b) => a - b);
-
             let defense = dice.reduce((a, b) => a + b, 0);
 
-            // ファイブカード
             if (vals[0] === 5) return { name: 'ファイブカード', atk: 130, defense };
-            // フォーカード
             if (vals[0] === 4) return { name: 'フォーカード', atk: 100, defense };
-            // フルハウス
             if (vals[0] === 3 && vals[1] === 2) return { name: 'フルハウス', atk: 80, defense };
-            // ストレート (1-2-3-4-5 or 2-3-4-5-6)
             if (uniqueSorted.length === 5 && (uniqueSorted[4] - uniqueSorted[0] === 4)) return { name: 'ストレート', atk: 65, defense };
-            // スリーカード
             if (vals[0] === 3) return { name: 'スリーカード', atk: 50, defense };
-            // ツーペア
             if (vals[0] === 2 && vals[1] === 2) return { name: 'ツーペア', atk: 35, defense };
-            // ワンペア
             if (vals[0] === 2) return { name: 'ワンペア', atk: 20, defense };
-            // ノーワン
             return { name: 'ノーワン', atk: 10, defense };
         }
 
@@ -920,7 +896,6 @@
                 container.appendChild(div);
             });
 
-            // ボタン制御
             let btnReroll = document.getElementById('btn-reroll');
             let btnNext = document.getElementById('btn-next-turn');
 
@@ -930,7 +905,7 @@
                 btnNext.style.display = 'none';
             } else if (currentBattle.phase === 'reroll') {
                 btnReroll.style.display = 'inline-block';
-                btnReroll.innerText = '選択ダイスを振り直し (REROLL)';
+                btnReroll.innerText = '選択ダイスを決定して攻撃へ';
                 btnNext.style.display = 'none';
             } else {
                 btnReroll.style.display = 'none';
@@ -939,27 +914,32 @@
             }
         }
 
+        // 💡 修正：HOLDクリックが確実に動作するように修正
         function toggleHold(laneIdx, dieIdx) {
             let lane = currentBattle.lanes[laneIdx];
-            if (lane.playerDefeated || currentBattle.phase !== 'reroll') return;
+            if (lane.playerDefeated) return;
+            
+            // 初回ロール直後でもクリックされたら即座にrerollフェーズに移行しつつHOLD切り替え
+            if (currentBattle.phase === 'roll') {
+                currentBattle.phase = 'reroll';
+            }
+            if (currentBattle.phase !== 'reroll') return;
+
             lane.playerHeld[dieIdx] = !lane.playerHeld[dieIdx];
             renderBattleUI();
         }
 
-        // プレイヤーのフェーズ進行ボタン
         function playerReroll() {
             if (currentBattle.phase === 'roll') {
                 currentBattle.phase = 'reroll';
                 renderBattleUI();
             } else if (currentBattle.phase === 'reroll') {
-                // 振り直し実行
                 currentBattle.lanes.forEach(lane => {
                     if (!lane.playerDefeated) {
                         for (let i = 0; i < 5; i++) {
                             if (!lane.playerHeld[i]) lane.playerDice[i] = Math.floor(Math.random() * 6) + 1;
                         }
                     }
-                    // AIもランダムに2つほどHOLDして振り直す簡易挙動
                     if (!lane.enemyDefeated) {
                         for (let i = 0; i < 5; i++) {
                             if (Math.random() > 0.4) lane.enemyDice[i] = Math.floor(Math.random() * 6) + 1;
@@ -967,12 +947,10 @@
                     }
                 });
                 playSound('dice');
-                // ダメージ解決へ
                 resolveTurnDamage();
             }
         }
 
-        // ダメージ計算 & 適用
         function resolveTurnDamage() {
             playSound('attack');
             currentBattle.lanes.forEach(lane => {
@@ -993,13 +971,10 @@
 
             currentBattle.phase = 'resolve';
             renderBattleUI();
-
-            // 修正：全5レーンの決着チェック
             checkBattleCompletion();
         }
 
         function nextBattleTurn() {
-            // まだ終わっていなければ次ターンへ
             let allDone = currentBattle.lanes.every(l => l.playerDefeated || l.enemyDefeated);
             if (!allDone) {
                 currentBattle.turn++;
@@ -1017,11 +992,9 @@
             }
         }
 
-        // 💡 修正ポイント：全5レーンの終了チェックを徹底化
         function checkBattleCompletion() {
             let allFinished = currentBattle.lanes.every(l => l.playerDefeated || l.enemyDefeated);
             if (allFinished) {
-                // 試合終了処理
                 setTimeout(finalizeBattle, 400);
             } else if (currentBattle.isAuto) {
                 setTimeout(autoStepBattle, 300);
@@ -1043,7 +1016,6 @@
                 renderBattleUI();
                 setTimeout(autoStepBattle, 200);
             } else if (currentBattle.phase === 'reroll') {
-                // 自動でランダムHOLDしてリロール
                 currentBattle.lanes.forEach(lane => {
                     if (!lane.playerDefeated) {
                         for (let i = 0; i < 5; i++) {
@@ -1073,7 +1045,6 @@
             let winner = totalPlayerHp >= totalEnemyHp ? currentBattle.teamAName : currentBattle.teamBName;
             let winScore = winner === currentBattle.teamAName ? totalPlayerHp : totalEnemyHp;
 
-            // 結果を反映
             if (currentBattle.type === 'league') {
                 let m = leagueMatches[currentBattle.matchIdx];
                 m.finished = true;
@@ -1085,6 +1056,9 @@
                 teamStats[m.teamA].totalHpScore += m.hpScoreA;
                 teamStats[m.teamB].totalHpScore += m.hpScoreB;
 
+                // 💡 自分の試合が終わったので、未消化のCPU試合を1つ進める
+                processNextPendingCpuMatch();
+
                 renderLeagueUI();
                 switchTab('league');
             } else {
@@ -1094,15 +1068,13 @@
                 if (winner === playoffObj.teamA) playoffObj.winsA++;
                 else playoffObj.winsB++;
 
-                // BO5 (3勝先取で完了)
                 if (playoffObj.winsA < 3 && playoffObj.winsB < 3) {
-                    playoffObj.finished = false; // まだ続く
+                    playoffObj.finished = false;
                 }
                 switchTab('playoff');
                 updatePlayoffUI();
             }
 
-            // モーダル通知
             document.getElementById('result-modal-title').innerText = `勝者: ${winner}！`;
             document.getElementById('result-modal-desc').innerText = `残りHP合計スコア: ${winScore} で勝利しました！`;
             document.getElementById('result-modal').classList.add('show');
@@ -1118,7 +1090,6 @@
         function closeRulesModal() { document.getElementById('rules-modal').classList.remove('show'); }
         function closeResultModal() { document.getElementById('result-modal').classList.remove('show'); }
 
-        // 初期実行
         window.onload = () => {
             initGame();
         };
